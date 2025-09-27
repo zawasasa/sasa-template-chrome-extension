@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ささっとテンプレ",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Webサイト上のテキスト入力欄で利用できる、定型文挿入支援ツール",
   "permissions": [
     "storage",

@@ -320,7 +320,6 @@ class TemplateManager {
                             <div class="template-item" data-template-index="${index}">
                                 <button class="template-button" title="${this.escapeHtml(template.content)}">
                                     <span class="template-text">${this.escapeHtml(template.name)}</span>
-                                    <span class="template-hint">クリックして挿入</span>
                                 </button>
                                 <div class="template-actions">
                                     <button class="edit-template-btn" title="テンプレートを編集">
