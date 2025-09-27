@@ -33,3 +33,7 @@ package-lock.json
 # Build files (if used in future)
 dist/
 build/
+
+# Large source files
+*.png.orig
+source_*.png
