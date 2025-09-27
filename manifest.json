@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "ささっとテンプレ",
+  "version": "1.0.0",
+  "description": "Webサイト上のテキスト入力欄で利用できる、定型文挿入支援ツール",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "action": {
+    "default_title": "ささっとテンプレ"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["sidebar.css"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["sidebar.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
