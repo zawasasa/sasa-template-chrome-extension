@@ -1,20 +1,39 @@
+// --- Side Panel 状態管理 ---
+chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes.shouldCloseSidePanel) {
+        if (changes.shouldCloseSidePanel.newValue &&
+            typeof changes.shouldCloseSidePanel.newValue === 'number') {
+            chrome.storage.local.set({ shouldCloseSidePanel: 0 });
+            window.close();
+        }
+    }
+});
+
+window.addEventListener('beforeunload', () => {
+    chrome.storage.local.set({ sidePanelOpen: false });
+});
+
+// --- TemplateManager クラス ---
 class TemplateManager {
     constructor() {
         this.templates = {};
+        this.categoryOrder = [];
         this.currentEditingCategory = null;
         this.currentEditingTemplate = null;
+        this.dragState = null;
         this.init();
     }
 
-    init() {
-        this.loadTemplates();
+    async init() {
+        await this.loadTemplates();
         this.bindEvents();
         this.render();
+        await chrome.storage.local.set({ sidePanelOpen: true });
     }
 
     bindEvents() {
         document.getElementById('close-sidebar').addEventListener('click', () => {
-            this.closeSidebar();
+            window.close();
         });
 
         document.getElementById('add-category-btn').addEventListener('click', () => {
@@ -61,10 +80,7 @@ class TemplateManager {
         });
     }
 
-    closeSidebar() {
-        window.parent.postMessage({ type: 'CLOSE_SIDEBAR' }, '*');
-    }
-
+    // --- カテゴリーフォーム ---
     showAddCategoryForm() {
         document.getElementById('add-category-form').style.display = 'block';
         document.getElementById('add-category-btn').style.display = 'none';
@@ -73,38 +89,46 @@ class TemplateManager {
 
     hideAddCategoryForm() {
         document.getElementById('add-category-form').style.display = 'none';
-        document.getElementById('add-category-btn').style.display = 'block';
+        document.getElementById('add-category-btn').style.display = 'flex';
         document.getElementById('category-name-input').value = '';
         this.currentEditingCategory = null;
     }
 
-    saveCategory() {
+    async saveCategory() {
         const categoryName = document.getElementById('category-name-input').value.trim();
         if (!categoryName) return;
 
         if (categoryName.length > 20) {
-            alert('カテゴリー名は20文字以内で入力してください。');
+            this.showToast('カテゴリー名は20文字以内で入力してください', 'warning');
             return;
         }
 
         if (this.currentEditingCategory) {
             const oldName = this.currentEditingCategory;
             if (oldName !== categoryName) {
+                if (this.templates[categoryName]) {
+                    this.showToast('同じ名前のカテゴリーが既に存在します', 'warning');
+                    return;
+                }
                 this.templates[categoryName] = this.templates[oldName];
                 delete this.templates[oldName];
+                const idx = this.categoryOrder.indexOf(oldName);
+                if (idx !== -1) this.categoryOrder[idx] = categoryName;
             }
             this.currentEditingCategory = null;
         } else {
             if (this.templates[categoryName]) {
-                alert('同じ名前のカテゴリーが既に存在します。');
+                this.showToast('同じ名前のカテゴリーが既に存在します', 'warning');
                 return;
             }
             this.templates[categoryName] = [];
+            this.categoryOrder.push(categoryName);
         }
 
-        this.saveTemplates();
+        await this.saveTemplates();
         this.hideAddCategoryForm();
         this.render();
+        this.showToast('カテゴリーを保存しました');
     }
 
     editCategory(categoryName) {
@@ -113,22 +137,26 @@ class TemplateManager {
         this.showAddCategoryForm();
     }
 
-    deleteCategory(categoryName) {
-        if (confirm(`カテゴリー「${categoryName}」を削除しますか？このカテゴリー内のテンプレートもすべて削除されます。`)) {
+    async deleteCategory(categoryName) {
+        if (confirm(`カテゴリー「${categoryName}」を削除しますか？\nこのカテゴリー内のテンプレートもすべて削除されます。`)) {
             delete this.templates[categoryName];
-            this.saveTemplates();
+            this.categoryOrder = this.categoryOrder.filter(n => n !== categoryName);
+            await this.saveTemplates();
             this.render();
+            this.showToast('カテゴリーを削除しました');
         }
     }
 
     toggleCategory(categoryName) {
-        const templatesList = document.querySelector(`[data-category="${categoryName}"] .templates-list`);
-        const toggle = document.querySelector(`[data-category="${categoryName}"] .category-toggle`);
+        const templatesList = document.querySelector(`[data-category="${CSS.escape(categoryName)}"] .templates-list`);
+        const toggle = document.querySelector(`[data-category="${CSS.escape(categoryName)}"] .category-toggle`);
+        if (!templatesList || !toggle) return;
 
         templatesList.classList.toggle('open');
-        toggle.textContent = templatesList.classList.contains('open') ? '▲' : '▼';
+        toggle.classList.toggle('open');
     }
 
+    // --- テンプレートモーダル ---
     showAddTemplateModal(categoryName) {
         this.currentEditingTemplate = { categoryName, isNew: true };
         document.getElementById('modal-title').textContent = 'テンプレートを追加';
@@ -155,17 +183,17 @@ class TemplateManager {
         this.currentEditingTemplate = null;
     }
 
-    saveTemplate() {
+    async saveTemplate() {
         const name = document.getElementById('template-name-input').value.trim();
         const content = document.getElementById('template-content-input').value.trim();
 
         if (!name || !content) {
-            alert('テンプレート名と内容を入力してください。');
+            this.showToast('テンプレート名と内容を入力してください', 'warning');
             return;
         }
 
-        if (name.length > 20) {
-            alert('テンプレート名は20文字以内で入力してください。');
+        if (name.length > 15) {
+            this.showToast('テンプレート名は15文字以内で入力してください', 'warning');
             return;
         }
 
@@ -174,7 +202,7 @@ class TemplateManager {
         if (isNew) {
             const existingNames = this.templates[categoryName].map(t => t.name);
             if (existingNames.includes(name)) {
-                alert('同じ名前のテンプレートが既に存在します。');
+                this.showToast('同じ名前のテンプレートが既に存在します', 'warning');
                 return;
             }
             this.templates[categoryName].push({ name, content });
@@ -182,158 +210,325 @@ class TemplateManager {
             const existingNames = this.templates[categoryName]
                 .map((t, i) => i !== templateIndex ? t.name : null)
                 .filter(n => n !== null);
-
             if (existingNames.includes(name)) {
-                alert('同じ名前のテンプレートが既に存在します。');
+                this.showToast('同じ名前のテンプレートが既に存在します', 'warning');
                 return;
             }
             this.templates[categoryName][templateIndex] = { name, content };
         }
 
-        this.saveTemplates();
+        await this.saveTemplates();
         this.closeModal();
         this.render();
+        this.showToast('テンプレートを保存しました');
     }
 
-    deleteTemplate(categoryName, templateIndex) {
+    async deleteTemplate(categoryName, templateIndex) {
         const template = this.templates[categoryName][templateIndex];
         if (confirm(`テンプレート「${template.name}」を削除しますか？`)) {
             this.templates[categoryName].splice(templateIndex, 1);
-            this.saveTemplates();
+            await this.saveTemplates();
             this.render();
+            this.showToast('テンプレートを削除しました');
         }
     }
 
-    insertTemplate(content) {
-        this.showInsertionFeedback();
-        window.parent.postMessage({
-            type: 'INSERT_TEMPLATE',
-            content: content
-        }, '*');
+    async insertTemplate(content) {
+        this.showToast('テンプレートを挿入しました');
+        try {
+            await chrome.runtime.sendMessage({
+                action: 'insertTemplate',
+                content: content
+            });
+        } catch (error) {
+            console.error('[ささっとテンプレ] Insert error:', error);
+            this.showToast('挿入に失敗しました', 'error');
+        }
     }
 
-    showInsertionFeedback() {
-        const existingFeedback = document.querySelector('.insertion-feedback');
-        if (existingFeedback) {
-            existingFeedback.remove();
+    async copyTemplate(content) {
+        try {
+            await navigator.clipboard.writeText(content);
+            this.showToast('クリップボードにコピーしました');
+        } catch (error) {
+            console.error('[ささっとテンプレ] Copy error:', error);
+            this.showToast('コピーに失敗しました', 'error');
         }
+    }
 
-        const feedback = document.createElement('div');
-        feedback.className = 'insertion-feedback';
-        feedback.innerHTML = '✅ テンプレートを挿入しました';
+    // --- ストレージ ---
+    async loadTemplates() {
+        const data = await chrome.storage.local.get(['templates', 'categoryOrder']);
+        this.templates = data.templates || {};
+        this.categoryOrder = data.categoryOrder || Object.keys(this.templates);
+        // カテゴリー順序の整合性チェック
+        const templateKeys = Object.keys(this.templates);
+        this.categoryOrder = this.categoryOrder.filter(k => templateKeys.includes(k));
+        templateKeys.forEach(k => {
+            if (!this.categoryOrder.includes(k)) this.categoryOrder.push(k);
+        });
+    }
 
-        document.body.appendChild(feedback);
+    async saveTemplates() {
+        await chrome.storage.local.set({
+            templates: this.templates,
+            categoryOrder: this.categoryOrder
+        });
+    }
+
+    // --- トースト通知 ---
+    showToast(message, type = 'success') {
+        const existing = document.querySelector('.toast-notification');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        requestAnimationFrame(() => toast.classList.add('show'));
 
         setTimeout(() => {
-            feedback.classList.add('show');
-        }, 10);
-
-        setTimeout(() => {
-            feedback.classList.remove('show');
+            toast.classList.remove('show');
             setTimeout(() => {
-                if (feedback.parentNode) {
-                    feedback.parentNode.removeChild(feedback);
-                }
+                if (toast.parentNode) toast.remove();
             }, 300);
         }, 2000);
     }
 
-    loadTemplates() {
-        const callbackId = 'load_' + Date.now();
-        window[callbackId] = (data) => {
-            this.templates = data || {};
+    // --- HTML エスケープ ---
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // --- テンプレート D&D ---
+    setupTemplateDragAndDrop(categoryDiv, categoryName) {
+        const templateItems = categoryDiv.querySelectorAll('.template-item');
+        const templatesList = categoryDiv.querySelector('.templates-list');
+
+        templateItems.forEach((item) => {
+            item.addEventListener('dragstart', (e) => {
+                const sourceIndex = parseInt(item.dataset.templateIndex);
+                this.dragState = {
+                    type: 'template',
+                    sourceCategoryName: categoryName,
+                    sourceIndex: sourceIndex
+                };
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', '');
+                requestAnimationFrame(() => item.classList.add('dragging'));
+            });
+
+            item.addEventListener('dragend', () => {
+                item.classList.remove('dragging');
+                document.querySelectorAll('.drag-over, .drag-over-category').forEach(el => {
+                    el.classList.remove('drag-over');
+                    el.classList.remove('drag-over-category');
+                });
+                this.dragState = null;
+            });
+        });
+
+        // テンプレート一覧をドロップゾーンに
+        templatesList.addEventListener('dragover', (e) => {
+            if (!this.dragState || this.dragState.type !== 'template') return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            templatesList.classList.add('drag-over');
+        });
+
+        templatesList.addEventListener('dragleave', (e) => {
+            if (!templatesList.contains(e.relatedTarget)) {
+                templatesList.classList.remove('drag-over');
+            }
+        });
+
+        templatesList.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            templatesList.classList.remove('drag-over');
+            if (!this.dragState || this.dragState.type !== 'template') return;
+
+            const { sourceCategoryName, sourceIndex } = this.dragState;
+            const template = this.templates[sourceCategoryName][sourceIndex];
+            if (!template) return;
+
+            // ドロップ位置を計算
+            const items = Array.from(templatesList.querySelectorAll('.template-item:not(.dragging)'));
+            let targetIndex = items.length;
+            for (let i = 0; i < items.length; i++) {
+                const rect = items[i].getBoundingClientRect();
+                if (e.clientY < rect.top + rect.height / 2) {
+                    targetIndex = parseInt(items[i].dataset.templateIndex);
+                    break;
+                }
+            }
+
+            if (sourceCategoryName === categoryName) {
+                // 同一カテゴリー内の並び替え
+                this.templates[categoryName].splice(sourceIndex, 1);
+                const adjustedIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex;
+                this.templates[categoryName].splice(Math.min(adjustedIndex, this.templates[categoryName].length), 0, template);
+            } else {
+                // カテゴリー間移動
+                this.templates[sourceCategoryName].splice(sourceIndex, 1);
+                this.templates[categoryName].splice(Math.min(targetIndex, this.templates[categoryName].length), 0, template);
+                this.showToast(`「${template.name}」を移動しました`);
+            }
+
+            this.dragState = null;
+            await this.saveTemplates();
             this.render();
-            delete window[callbackId];
-        };
-
-        window.parent.postMessage({
-            type: 'GET_STORAGE',
-            callback: callbackId
-        }, '*');
+        });
     }
 
-    saveTemplates() {
-        const callbackId = 'save_' + Date.now();
-        window[callbackId] = () => {
-            delete window[callbackId];
-        };
+    // --- カテゴリー D&D ---
+    setupCategoryDragAndDrop(categoryDiv, categoryName) {
+        const handle = categoryDiv.querySelector('.category-drag-handle');
+        if (!handle) return;
 
-        window.parent.postMessage({
-            type: 'SET_STORAGE',
-            data: this.templates,
-            callback: callbackId
-        }, '*');
+        handle.addEventListener('dragstart', (e) => {
+            this.dragState = { type: 'category', sourceCategoryName: categoryName };
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', '');
+            requestAnimationFrame(() => categoryDiv.classList.add('category-dragging'));
+        });
+
+        handle.addEventListener('dragend', () => {
+            categoryDiv.classList.remove('category-dragging');
+            document.querySelectorAll('.drag-over-category').forEach(el => {
+                el.classList.remove('drag-over-category');
+            });
+            this.dragState = null;
+        });
+
+        categoryDiv.addEventListener('dragover', (e) => {
+            if (!this.dragState || this.dragState.type !== 'category') return;
+            if (this.dragState.sourceCategoryName === categoryName) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            categoryDiv.classList.add('drag-over-category');
+        });
+
+        categoryDiv.addEventListener('dragleave', (e) => {
+            if (!categoryDiv.contains(e.relatedTarget)) {
+                categoryDiv.classList.remove('drag-over-category');
+            }
+        });
+
+        categoryDiv.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            categoryDiv.classList.remove('drag-over-category');
+            if (!this.dragState || this.dragState.type !== 'category') return;
+
+            const { sourceCategoryName } = this.dragState;
+            const sourceIdx = this.categoryOrder.indexOf(sourceCategoryName);
+            const targetIdx = this.categoryOrder.indexOf(categoryName);
+            if (sourceIdx === -1 || targetIdx === -1) return;
+
+            this.categoryOrder.splice(sourceIdx, 1);
+            this.categoryOrder.splice(targetIdx, 0, sourceCategoryName);
+
+            this.dragState = null;
+            await this.saveTemplates();
+            this.render();
+            this.showToast('カテゴリーの順序を変更しました');
+        });
     }
 
+    // --- レンダリング ---
     render() {
         const categoriesList = document.getElementById('categories-list');
         categoriesList.innerHTML = '';
 
-        const categoryNames = Object.keys(this.templates);
-
-        if (categoryNames.length === 0) {
-            categoriesList.innerHTML = '<div class="empty-state">カテゴリーを追加してテンプレートを作成しましょう</div>';
+        if (this.categoryOrder.length === 0) {
+            categoriesList.innerHTML = `
+                <div class="empty-state">
+                    <span class="empty-state-icon">📋</span>
+                    <div class="empty-state-text">
+                        カテゴリーを追加して<br>テンプレートを作成しましょう
+                    </div>
+                </div>`;
             return;
         }
 
-        categoryNames.forEach(categoryName => {
+        this.categoryOrder.forEach(categoryName => {
+            if (!this.templates[categoryName]) return;
+
             const categoryDiv = document.createElement('div');
             categoryDiv.className = 'category';
             categoryDiv.setAttribute('data-category', categoryName);
 
             const templates = this.templates[categoryName];
-            const isOpen = false;
 
             categoryDiv.innerHTML = `
-                <div class="category-header" style="background: ${this.getCategoryColor(categoryName)};">
+                <div class="category-header">
+                    <div class="category-drag-handle" draggable="true" title="ドラッグで並び替え">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+                            <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+                            <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+                        </svg>
+                    </div>
                     <div class="category-name">
                         <span>${this.escapeHtml(categoryName)}</span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 4px;">
                         <div class="category-actions">
                             <button class="edit-category-btn" title="カテゴリーを編集">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                                     <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                 </svg>
                             </button>
                             <button class="delete-category-btn" title="カテゴリーを削除">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="3,6 5,6 21,6"/>
                                     <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
-                                    <line x1="10" y1="11" x2="10" y2="17"/>
-                                    <line x1="14" y1="11" x2="14" y2="17"/>
                                 </svg>
                             </button>
                         </div>
-                        <span class="category-toggle ${isOpen ? 'open' : ''}">
+                        <span class="category-toggle">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="6,9 12,15 18,9"/>
                             </svg>
                         </span>
                     </div>
                 </div>
-                <div class="templates-list ${isOpen ? 'open' : ''}">
+                <div class="templates-list">
                     ${templates.length === 0 ?
-                        '<div class="empty-state">テンプレートがありません</div>' :
+                        '<div class="empty-state" style="margin: 12px; padding: 16px;">テンプレートがありません</div>' :
                         templates.map((template, index) => `
-                            <div class="template-item" data-template-index="${index}">
-                                <button class="template-button" title="${this.escapeHtml(template.content)}">
+                            <div class="template-item" draggable="true" data-template-index="${index}" data-category="${this.escapeHtml(categoryName)}">
+                                <div class="drag-indicator">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                                        <circle cx="9" cy="7" r="1.5"/><circle cx="15" cy="7" r="1.5"/>
+                                        <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+                                        <circle cx="9" cy="17" r="1.5"/><circle cx="15" cy="17" r="1.5"/>
+                                    </svg>
+                                </div>
+                                <button class="template-button">
                                     <span class="template-text">${this.escapeHtml(template.name)}</span>
                                 </button>
+                                <div class="template-preview">${this.escapeHtml(template.content)}</div>
                                 <div class="template-actions">
+                                    <button class="copy-template-btn" title="クリップボードにコピー">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                        </svg>
+                                    </button>
                                     <button class="edit-template-btn" title="テンプレートを編集">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                                             <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                         </svg>
                                     </button>
                                     <button class="delete-template-btn" title="テンプレートを削除">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                             <polyline points="3,6 5,6 21,6"/>
                                             <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
-                                            <line x1="10" y1="11" x2="10" y2="17"/>
-                                            <line x1="14" y1="11" x2="14" y2="17"/>
                                         </svg>
                                     </button>
                                 </div>
@@ -341,7 +536,7 @@ class TemplateManager {
                         `).join('')
                     }
                     <button class="add-template-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="12" y1="5" x2="12" y2="19"/>
                             <line x1="5" y1="12" x2="19" y2="12"/>
                         </svg>
@@ -350,15 +545,15 @@ class TemplateManager {
                 </div>
             `;
 
+            // --- イベントバインド ---
             const categoryHeader = categoryDiv.querySelector('.category-header');
             const categoryNameEl = categoryDiv.querySelector('.category-name');
             const categoryToggle = categoryDiv.querySelector('.category-toggle');
 
             const toggleHandler = (e) => {
-                if (e.target.closest('.category-actions')) return;
+                if (e.target.closest('.category-actions') || e.target.closest('.category-drag-handle')) return;
                 this.toggleCategory(categoryName);
             };
-
             categoryNameEl.addEventListener('click', toggleHandler);
             categoryToggle.addEventListener('click', toggleHandler);
 
@@ -376,9 +571,16 @@ class TemplateManager {
                 this.showAddTemplateModal(categoryName);
             });
 
-            categoryDiv.querySelectorAll('.template-button').forEach((buttonEl, index) => {
-                buttonEl.addEventListener('click', () => {
+            categoryDiv.querySelectorAll('.template-button').forEach((btn, index) => {
+                btn.addEventListener('click', () => {
                     this.insertTemplate(templates[index].content);
+                });
+            });
+
+            categoryDiv.querySelectorAll('.copy-template-btn').forEach((btn, index) => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.copyTemplate(templates[index].content);
                 });
             });
 
@@ -396,66 +598,21 @@ class TemplateManager {
                 });
             });
 
+            // D&D セットアップ
+            this.setupTemplateDragAndDrop(categoryDiv, categoryName);
+            this.setupCategoryDragAndDrop(categoryDiv, categoryName);
+
             categoriesList.appendChild(categoryDiv);
         });
     }
-
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    getCategoryColor(categoryName) {
-        const colors = [
-            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-            'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-            'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-            'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-            'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-            'linear-gradient(135deg, #ff8a80 0%, #ea4c89 100%)',
-            'linear-gradient(135deg, #8fd3f4 0%, #84fab0 100%)',
-            'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)',
-            'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)',
-            'linear-gradient(135deg, #fdbb2d 0%, #22c1c3 100%)'
-        ];
-
-        // カテゴリー名に基づいてハッシュ値を生成し、色を選択
-        let hash = 0;
-        for (let i = 0; i < categoryName.length; i++) {
-            const char = categoryName.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // 32bit整数に変換
-        }
-
-        const index = Math.abs(hash) % colors.length;
-        return colors[index];
-    }
-
 }
 
-window.addEventListener('message', function(event) {
-    try {
-        if (event.data.type === 'STORAGE_RESPONSE') {
-            if (window[event.data.callback]) {
-                window[event.data.callback](event.data.data);
-            }
-        } else if (event.data.type === 'STORAGE_SET_RESPONSE') {
-            if (window[event.data.callback]) {
-                window[event.data.callback]();
-            }
-        }
-    } catch (error) {
-        console.error('Sidebar message handling error:', error);
-    }
+// --- エラーハンドリング ---
+window.addEventListener('error', (event) => {
+    console.error('[ささっとテンプレ] Error:', event.error);
 });
 
-window.addEventListener('error', function(event) {
-    console.error('Sidebar error:', event.error);
-});
-
+// --- 初期化 ---
 document.addEventListener('DOMContentLoaded', () => {
     new TemplateManager();
 });

@@ -1,109 +1,130 @@
-#sidebar {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 360px;
-    height: 100vh;
-    background-color: #ffffff;
-    border-left: 1px solid #f1f3f4;
-    box-shadow: -1px 0 24px rgba(0, 0, 0, 0.04);
-    z-index: 999999;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, sans-serif;
-    font-size: 14px;
-    display: none;
-    overflow: hidden;
+/* === リセット & ベース === */
+* {
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
-    backdrop-filter: blur(20px);
 }
 
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, sans-serif;
+    background: #fafafa;
+    color: #333;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+}
+
+/* === ヘッダー === */
 #sidebar-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 24px 24px 20px 24px;
-    border-bottom: 1px solid #f1f3f4;
-    background-color: #ffffff;
-    backdrop-filter: blur(20px);
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #7CB342 0%, #558B2F 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+.header-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
 }
 
 #sidebar-header h2 {
     margin: 0;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
-    color: #1f2937;
+    color: #ffffff;
     letter-spacing: -0.01em;
 }
 
+.version {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 400;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
 #close-sidebar {
-    background: none;
+    background: rgba(255, 255, 255, 0.15);
     border: none;
-    font-size: 18px;
     cursor: pointer;
-    color: #9ca3af;
+    color: rgba(255, 255, 255, 0.9);
     padding: 6px;
-    border-radius: 6px;
-    transition: all 0.15s ease;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
 }
 
 #close-sidebar:hover {
-    background-color: #f3f4f6;
-    color: #374151;
+    background: rgba(255, 255, 255, 0.3);
+    color: #ffffff;
 }
 
+/* === メインコンテンツ === */
 #sidebar-content {
+    flex: 1;
     padding: 0;
-    height: calc(100vh - 80px);
     overflow-y: auto;
-    background: #ffffff;
+    background: #fafafa;
 }
 
+/* === 使い方ヒント === */
 .usage-hint {
-    background-color: #f9fafb;
-    border: 1px solid #f3f4f6;
+    background-color: #ffffff;
+    border: 1px solid #e8eaed;
     border-radius: 8px;
-    padding: 20px 24px;
-    margin: 24px 24px 0 24px;
+    padding: 16px 20px;
+    margin: 16px 16px 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .hint-title {
     font-weight: 600;
-    font-size: 13px;
-    color: #1f2937;
-    margin-bottom: 12px;
-    letter-spacing: -0.01em;
+    font-size: 12px;
+    color: #558B2F;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .hint-steps {
     font-size: 12px;
-    color: #6b7280;
+    color: #5f6368;
     line-height: 1.6;
 }
 
 .hint-steps > div {
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 
+/* === カテゴリー追加セクション === */
 #add-category-section {
-    margin: 24px;
+    margin: 16px;
     margin-bottom: 8px;
 }
 
 #add-category-btn {
     width: 100%;
-    padding: 12px 16px;
+    padding: 10px 16px;
     background: #ffffff;
-    color: #374151;
-    border: 1px solid #e5e7eb;
+    color: #7CB342;
+    border: 1px solid #e8eaed;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -112,10 +133,9 @@
 }
 
 #add-category-btn:hover {
-    background: #f9fafb;
-    border-color: #d1d5db;
-    transform: translateY(-0.5px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+    background: #f1f8e9;
+    border-color: #c5e1a5;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .add-category-text {
@@ -125,19 +145,26 @@
 #add-category-form {
     margin-top: 12px;
     padding: 16px;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    background-color: #f8f9fa;
+    border: 1px solid #c5e1a5;
+    border-radius: 8px;
+    background-color: #f1f8e9;
 }
 
 #category-name-input, #template-name-input {
     width: 100%;
     padding: 8px 12px;
     border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
+    border-radius: 6px;
+    font-size: 13px;
     margin-bottom: 12px;
     box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+#category-name-input:focus, #template-name-input:focus {
+    outline: none;
+    border-color: #7CB342;
+    box-shadow: 0 0 0 2px rgba(124, 179, 66, 0.15);
 }
 
 .form-buttons {
@@ -149,67 +176,96 @@
     flex: 1;
     padding: 8px 16px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.2s;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
 }
 
 #save-category-btn, #save-template-btn {
-    background-color: #28a745;
+    background-color: #7CB342;
     color: white;
 }
 
 #save-category-btn:hover, #save-template-btn:hover {
-    background-color: #1e7e34;
+    background-color: #558B2F;
 }
 
 #cancel-category-btn, #cancel-template-btn {
-    background-color: #6c757d;
+    background-color: #9e9e9e;
     color: white;
 }
 
 #cancel-category-btn:hover, #cancel-template-btn:hover {
-    background-color: #545b62;
+    background-color: #757575;
 }
 
+/* === カテゴリー === */
 .category {
-    margin: 0 24px 16px 24px;
-    border-radius: 12px;
-    overflow: hidden;
+    margin: 0 16px 12px 16px;
+    border-radius: 8px;
+    overflow: visible;
     background-color: #ffffff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     position: relative;
-    border: 1px solid #f3f4f6;
+    border: 1px solid #e8eaed;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.category.drag-over-category {
+    border-color: #7CB342;
+    box-shadow: 0 0 0 2px rgba(124, 179, 66, 0.2);
+}
+
+.category.category-dragging {
+    opacity: 0.5;
 }
 
 .category-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid #f9fafb;
+    padding: 12px 16px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
     background: #ffffff;
+    border-radius: 8px 8px 0 0;
+    user-select: none;
 }
 
 .category-header:hover {
-    background: #f9fafb;
+    background: #f8f9fa;
+}
+
+.category-drag-handle {
+    display: flex;
+    align-items: center;
+    color: #bdbdbd;
+    cursor: grab;
+    padding: 2px 4px;
+    margin-right: 8px;
+    transition: color 0.2s;
+}
+
+.category-drag-handle:hover {
+    color: #7CB342;
 }
 
 .category-name {
-    font-weight: 600;
-    color: #1f2937;
+    font-weight: 500;
+    color: #202124;
     font-size: 14px;
     letter-spacing: -0.01em;
+    flex: 1;
 }
 
 .category-toggle {
-    color: #9ca3af;
+    color: #5f6368;
     font-size: 14px;
-    font-weight: 500;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
 }
 
 .category-toggle.open {
@@ -217,23 +273,22 @@
 }
 
 .category-header:hover .category-toggle {
-    color: #6b7280;
+    color: #202124;
 }
 
 .category-actions {
     display: flex;
-    gap: 6px;
+    gap: 4px;
 }
 
 .edit-category-btn, .delete-category-btn {
     background: transparent;
     border: none;
     cursor: pointer;
-    padding: 6px;
-    border-radius: 6px;
-    font-size: 14px;
-    color: #9ca3af;
-    transition: all 0.15s ease;
+    padding: 5px;
+    border-radius: 50%;
+    color: #9e9e9e;
+    transition: all 0.2s ease;
     min-width: 28px;
     height: 28px;
     display: flex;
@@ -242,94 +297,137 @@
 }
 
 .edit-category-btn:hover {
-    background: #f3f4f6;
-    color: #374151;
+    background: #f1f8e9;
+    color: #7CB342;
 }
 
 .delete-category-btn:hover {
-    background: #fef2f2;
-    color: #dc2626;
+    background: #fce8e6;
+    color: #d93025;
 }
 
+/* === テンプレート一覧 === */
 .templates-list {
     background: #ffffff;
-    display: none;
-    position: relative;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    border-top: 1px solid #f1f3f4;
 }
 
 .templates-list.open {
-    display: block;
+    max-height: 2000px;
 }
 
+.templates-list.drag-over {
+    background: #f1f8e9;
+}
+
+/* === テンプレートアイテム === */
 .template-item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 12px 20px;
-    border-bottom: 1px solid #f9fafb;
+    padding: 8px 12px;
+    background: #ffffff;
     transition: all 0.15s ease;
     position: relative;
+    margin: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: grab;
 }
 
 .template-item:hover {
-    background: #f9fafb;
+    background: #f8f9fa;
+    border-color: #e8eaed;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
-.template-item:last-child {
-    border-bottom: none;
+.template-item.dragging {
+    opacity: 0.4;
+    background: #f1f8e9;
+    border: 1px dashed #7CB342;
+}
+
+.template-item .drag-indicator {
+    display: flex;
+    align-items: center;
+    color: #d0d0d0;
+    margin-right: 6px;
+    flex-shrink: 0;
+    transition: color 0.2s;
+}
+
+.template-item:hover .drag-indicator {
+    color: #9e9e9e;
 }
 
 .template-button {
-    flex-grow: 1;
+    flex: 1;
     background: transparent;
     border: none;
-    border-radius: 8px;
-    padding: 8px 12px;
+    border-radius: 4px;
+    padding: 6px 8px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     text-align: left;
-    margin-right: 12px;
+    min-width: 0;
 }
 
 .template-button:hover {
-    background: #f3f4f6;
-    transform: translateX(2px);
+    background: #f1f8e9;
+    color: #558B2F;
 }
 
 .template-text {
-    font-weight: 500;
-    color: #374151;
-    font-size: 14px;
-    transition: all 0.15s ease;
+    font-weight: 400;
+    color: #202124;
+    font-size: 13px;
+    transition: all 0.2s ease;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
+.template-button:hover .template-text {
+    color: #558B2F;
+}
+
+/* === テンプレートアクション === */
 .template-actions {
     display: flex;
-    gap: 4px;
+    gap: 2px;
     opacity: 0;
     transition: all 0.15s ease;
+    flex-shrink: 0;
 }
 
 .template-item:hover .template-actions {
     opacity: 1;
 }
 
-.edit-template-btn, .delete-template-btn {
+.copy-template-btn,
+.edit-template-btn,
+.delete-template-btn {
     background: transparent;
     border: none;
     cursor: pointer;
-    padding: 6px;
+    padding: 5px;
     border-radius: 6px;
-    font-size: 14px;
     transition: all 0.15s ease;
-    min-width: 28px;
-    height: 28px;
+    min-width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #9ca3af;
+    color: #bdbdbd;
+}
+
+.copy-template-btn:hover {
+    background: #f1f8e9;
+    color: #7CB342;
 }
 
 .edit-template-btn:hover {
@@ -342,42 +440,80 @@
     color: #dc2626;
 }
 
+/* === テンプレート追加ボタン === */
 .add-template-btn {
-    width: 100%;
-    padding: 12px 20px;
-    background: #f9fafb;
-    color: #6b7280;
-    border: 1px dashed #d1d5db;
-    border-radius: 0 0 12px 12px;
-    border-top: none;
+    width: calc(100% - 24px);
+    padding: 12px 16px;
+    background: #ffffff;
+    color: #9e9e9e;
+    border: 2px dashed #e8eaed;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 12px;
     transition: all 0.15s ease;
     font-weight: 500;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
+    margin: 12px 12px;
+    box-shadow: none;
 }
 
 .add-template-btn:hover {
-    background: #f3f4f6;
-    border-color: #9ca3af;
-    color: #374151;
+    background: #f1f8e9;
+    border-color: #c5e1a5;
+    color: #7CB342;
 }
 
 .add-text {
-    font-size: 13px;
+    font-size: 12px;
 }
 
+/* === テンプレートプレビューツールチップ === */
+.template-preview {
+    display: none;
+    position: absolute;
+    left: 12px;
+    bottom: calc(100% + 6px);
+    background: #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    max-width: 260px;
+    max-height: 120px;
+    overflow: hidden;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+    word-break: break-all;
+}
+
+.template-preview::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 20px;
+    border: 5px solid transparent;
+    border-top-color: #333;
+}
+
+.template-item:hover .template-preview {
+    display: block;
+}
+
+/* === モーダル === */
 #template-modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1000000;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 1000;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -385,43 +521,43 @@
 
 #modal-content {
     background-color: white;
-    border-radius: 8px;
+    border-radius: 12px;
     width: 90%;
-    max-width: 500px;
+    max-width: 400px;
     max-height: 80vh;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
 #modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid #e0e0e0;
-    background-color: #f8f9fa;
+    padding: 14px 20px;
+    border-bottom: 1px solid #e8eaed;
+    background: linear-gradient(135deg, #7CB342 0%, #558B2F 100%);
 }
 
 #modal-title {
     margin: 0;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
-    color: #333;
+    color: #ffffff;
 }
 
 #close-modal {
-    background: none;
+    background: rgba(255, 255, 255, 0.15);
     border: none;
-    font-size: 20px;
+    font-size: 18px;
     cursor: pointer;
-    color: #666;
+    color: rgba(255, 255, 255, 0.9);
     padding: 4px 8px;
     border-radius: 4px;
     transition: background-color 0.2s;
 }
 
 #close-modal:hover {
-    background-color: #e9ecef;
+    background: rgba(255, 255, 255, 0.3);
 }
 
 #modal-body {
@@ -433,55 +569,118 @@
     min-height: 120px;
     padding: 8px 12px;
     border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
+    border-radius: 6px;
+    font-size: 13px;
     font-family: inherit;
     resize: vertical;
     margin-bottom: 16px;
     box-sizing: border-box;
+    transition: border-color 0.2s;
 }
 
+#template-content-input:focus {
+    outline: none;
+    border-color: #7CB342;
+    box-shadow: 0 0 0 2px rgba(124, 179, 66, 0.15);
+}
+
+/* === 空状態 === */
 .empty-state {
     text-align: center;
-    color: #6c757d;
-    font-style: italic;
-    padding: 20px;
-}
-
-body.sidebar-open {
-    margin-right: 350px;
-}
-
-.insertion-feedback {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-50px);
-    background-color: #10b981;
-    color: white;
-    padding: 12px 20px;
+    color: #9e9e9e;
+    padding: 24px 20px;
+    background: #fafafa;
     border-radius: 8px;
-    font-size: 14px;
+    margin: 16px;
+    border: 1px dashed #e5e7eb;
+    font-size: 12px;
+}
+
+.empty-state-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.empty-state-text {
+    line-height: 1.6;
+}
+
+/* === フッター === */
+.sidebar-footer {
+    padding: 8px 20px;
+    text-align: center;
+    font-size: 10px;
+    color: #bdbdbd;
+    border-top: 1px solid #e8eaed;
+    background: #ffffff;
+    flex-shrink: 0;
+}
+
+.sidebar-footer p {
+    margin: 0;
+}
+
+/* === トースト通知 === */
+.toast-notification {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-60px);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 12px;
     font-weight: 500;
-    z-index: 1000001;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 10000;
     opacity: 0;
     transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    white-space: nowrap;
 }
 
-.insertion-feedback.show {
+.toast-notification.show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
 }
 
-.empty-state {
-    text-align: center;
-    color: #9ca3af;
-    font-style: italic;
-    padding: 32px 20px;
-    background: #f9fafb;
-    border-radius: 8px;
-    margin: 20px;
-    border: 1px dashed #e5e7eb;
-    font-size: 13px;
+.toast-success {
+    background-color: #7CB342;
+    color: white;
+}
+
+.toast-warning {
+    background-color: #FFA726;
+    color: white;
+}
+
+.toast-error {
+    background-color: #EF5350;
+    color: white;
+}
+
+/* === ドラッグ&ドロップ指示 === */
+.drop-indicator {
+    height: 2px;
+    background: #7CB342;
+    border-radius: 1px;
+    margin: 0 12px;
+    transition: opacity 0.15s;
+}
+
+/* === スクロールバー === */
+::-webkit-scrollbar {
+    width: 5px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #d0d0d0;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a0a0a0;
 }
